@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
     <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
         <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
@@ -9,6 +10,9 @@
         <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.min.js" integrity="sha384-Atwg2Pkwv9vp0ygtn1JAojH0nYbwNJLPhwyoVbhoPwBhjQPR5VtM2+xf0Uwh9KtT" crossorigin="anonymous"></script>
         <style>
+            div {
+                font-family: "Roboto";
+            }
             .innerDialog {
                 padding: 15px;
             }
@@ -36,9 +40,10 @@
                 m = ( m < 10 ) ? m = "0" + m : m;
                 s = ( s < 10 ) ? s = "0" + s : s;
 
-                weekday[d] = '<b>' + weekday[d] + '</b>';
+                weekday[d] = '<span class=\'text-white\'><b>' + weekday[d] + '</b></span>';
                 var time_string = h + ":" + m + ":" + s + " " + session;
                 var weekday_string = weekday.join(' ');
+                weekday_string = '<p class=\'text-muted\'>' + weekday_string + '</p>';
                 $(".clock").html(time_string);
                 $(".weekday").html(weekday_string);
                 setTimeout( showTime, 1000 );
@@ -50,7 +55,7 @@
                 marquee.css({"overflow": "hidden", "width": "100%"});
 
                 marquee.wrapInner("<span>");
-                marquee.find("span").css({"display": "inline-block", "text-align":"center" }); 
+                marquee.find("span").css({"display": "inline-block", "text-align":"center", "min-width":$(".dialog")[0].scrollWidth}); 
                 marquee.append(marquee.find("span").clone()); // now there are two spans with "My Text"
 
                 marquee.wrapInner("<div>");
@@ -58,7 +63,7 @@
                 marquee.find("div").css("display", "inline-block");
 
                 var reset = function() {
-                    var scrollWidth = $("span")[0].scrollWidth
+                    var scrollWidth = $("span")[0].scrollWidth;
                     $(this).css("margin-left", "0px");
                     $(this).animate({ "margin-left": scrollWidth * -1 }, 10000 * scrollWidth / 1000, 'linear', reset);
                 };
@@ -76,9 +81,12 @@
             function onYouTubeIframeAPIReady() {
                 player = new YT.Player('player', {
                     width: '100%',
-                    videoId: 'vVo1pk2YLxw',
+                    videoId: get_youtube_id(),
                     playerVars: {
-                        'playsinline': 1
+                        'playsinline': 1,
+                        'rel': 0,
+                        'controls': 0,
+                        'showinfo': 0
                     },
                     events: {
                         'onReady': onPlayerReady,
@@ -98,76 +106,137 @@
             };
 
             function show_editer() {
-                $('#board').css('display', 'none');
-                $('#editer').css('display', '');
+                items = get_localstorage();
+                $('#newsValue').val(items['news']);
+                $('#youtubeValue').val(items['youtube']);
+                $('#announcementValue').val(items['announcement']);
+                $('#exampleModal').modal('toggle');
             };
 
-            function show_board() {
-                $('#board').css('display', '');
-                $('#editer').css('display', 'none');
+            function init_localstorage() {
+                localStorage.tvBoardDataExist = 1;
+                localStorage.tvBoardDataNews = 'news';
+                localStorage.tvBoardDataYouTube = 'https://youtu.be/';
+                localStorage.tvBoardDataAnnouncement = 'announcement'
+            };
+
+            function update_localstorage(items) {
+                localStorage.tvBoardDataExist = 1;
+                localStorage.tvBoardDataNews = items['news'];
+                localStorage.tvBoardDataYouTube = items['youtube'];
+                localStorage.tvBoardDataAnnouncement = items['announcement'];
+            };
+
+            function get_localstorage() {
+                items = {};
+                items['news'] = localStorage.tvBoardDataNews;
+                items['youtube'] = localStorage.tvBoardDataYouTube;
+                items['announcement'] = localStorage.tvBoardDataAnnouncement;
+                return items;
+            };
+
+            function clean_localstorage() {
+                localStorage.removeItem('tvBoardDataExist');
+                localStorage.removeItem('tvBoardDataNews');
+                localStorage.removeItem('tvBoardDataYouTube');
+                localStorage.removeItem('tvBoardDataAnnouncement');
+            };
+
+            function extract_youtube_id(url) {
+                var id = 0;
+                var re = /https?:\/\/(www.)?(youtu.be\/|youtube.com\/watch\?v=)([a-zA-Z0-9_\\-]{11})/;
+                var result = re.exec(url)
+                if (result) {
+                    id = result[result.length - 1];
+                };
+                return id;
+            };
+            
+            function get_youtube_id() {
+                var id = 'm1YUmZRfgqU';
+                if (localStorage.tvBoardDataYouTube) {
+                    result = extract_youtube_id(localStorage.tvBoardDataYouTube);
+                    if (result) {
+                        id = result;
+                    };
+                };
+                return id;
+            }
+
+            function update_board() {
+                if (!localStorage.tvBoardDataExist) {
+                    init_localstorage();
+                }
+                items = get_localstorage();
+                $('#marquee span').each(function () {
+                    $(this).text(items['news']);
+                });
+                $('#announcement pre').text(items['announcement']);
+            };
+
+            function save_change() {
+                items = {};
+                items['news'] = $('#newsValue').val();
+                items['youtube'] = $('#youtubeValue').val();
+                items['announcement'] = $('#announcementValue').val();
+                update_localstorage(items);
+                $('#exampleModal').modal('hide');
+                location.reload();
             };
         </script>
     </head>
-    <body>
-        <div style="position:absolute; top:0; right:0"><a data-toggle="modal" href="javascript:$('#exampleModal').modal('toggle')"><i class="fas fa-cog"></i>Update</a></div>
-        <div class="modal fade bd-example-modal-lg" id="exampleModal" role="dialog" aria-hidden="true">
+    <body class="bg-dark text-white" onload="update_board()">
+        <div style="position:absolute; top:0; right:0; font-size:0.8vw;"><a href="javascript:void(0)" onclick="show_editer()"><i class="fas fa-cog"></i>Update</a></div>
+        <div class="modal fade bd-example-modal-lg text-dark" id="exampleModal" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="exampleModalLabel">Update</h5>
                     </div>
-                    <div class="modal-body" style="height:60vh">
-                        News ticker</br>
-                        <input type="text" style="width:100%"></input></br>
+                    <div class="modal-body" style="height:70vh">
+                        News</br>
+                        <input type="text" id="newsValue" style="width:100%"></input></br>
                         YouTube link</br>
-                        <input type="text" style="width:100%"></input></br>
+                        <input type="text" id="youtubeValue" style="width:100%"></input></br>
                         Announcement</br>
-                        <textarea style="width:100%;height:60%"></textarea>
+                        <textarea id="announcementValue" style="width:100%;height:70%"></textarea>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="javascript:$('#exampleModal').modal('hide')">Close</button>
-                        <button type="button" class="btn btn-primary">Save changes</button>
+                        <button type="button" class="btn btn-primary" onclick="save_change()">Save changes</button>
                     </div>
                 </div>
             </div>
         </div>
         <div class="container" id="board" style="max-width:100%;">
-            <div class="row" style="height:14vh">
-                <div class="col-9">
+            <div class="row" style="height:1vh"></div>
+            <div class="row" style="height:13vh">
+                <div style="width:72%">
                     <div class="dialog">
-                        <div class="innerDialog" id="marquee" style="font-size:3vw; margin: auto;">
-                            {指揮中心快訊}經多次溝通未果，衛福部依法撤銷金門縣政府110年5月23日公告;  網傳「醫院把患者遺體棄在河裏」 指揮中心：境外假消息勿輕信
+                        <div class="innerDialog" id="marquee" style="font-size:5.5vh;">
                         </div>
                     </div>
                 </div>
-                <div class="col-3">
+                <div style="width:23%; margin-left: auto; margin-right: 0;">
 	            <div class="dialog">
                         <div class="innerDialog" style="text-align: center;margin: auto;">
-                            <div class="clock" id="clock" style="font-size:3vw;"></div>
-                            <div class="weekday" id="weekday" style="font-size:0.8vw;"></div>
+                            <div class="clock" id="clock" style="font-size:5.5vh;height:7vh"></div>
+                            <div class="weekday" id="weekday" style="font-size:1.5vh;height:3vh"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="row" style="height:85vh">
-                <div class="col-9">
+            <div class="row" style="height:4vh"></div>
+            <div class="row" style="height:77vh">
+                <div style="width:72%">
                     <div class="dialog" style="height:100%">
                         <div class="innerDialog" id="player" style="height:100%"></div>
                     </div>
                 </div>
-                <div class="col-3">
+                <div style="width:23%; margin-left: auto; margin-right: 0;">
                     <div class="dialog">
-                        <div class="innerDialog">
-                            <pre style="height:79vh;white-space:pre-wrap;overflow-y:scroll;">中央流行疫情指揮中心今(24)日表示，已於上午與各縣市政府完成召開「全國防疫會議」。會議決議如下：
-一、全國三級警戒發布後，為防止各地出現標準不一現象，指揮中心依傳染病防治法第37條相關規定，對於全國須一致遵守之防疫措施，訂有各項指引對外發布，請各地方政府配合，達到全國防疫標準一致、説法一致、步調一致，以利民眾落實執行，將傳染可能性降到最低。
-
-二、為強化確診重症資源調度及醫療體系，指揮中心已於昨(23)日與各地方政府開會研議，完成設置專責加護病房(ICU)原則，及集中檢疫所後送醫院綠色通道建置作法，以有效掌握全國重症收治量能，確保急、重症醫療照護品質及資源調度效率，並落實醫療機構感染管制。
-
-三、為統一集中檢疫場所後送醫療及處置機制，指揮中心於昨(23)日邀集各地方消防局局長，共同研議統一醫療後送作法；集中檢疫場所指揮官或醫護組人員，如發現需後送醫療及處置個案，只要撥打119通報，各地消防機關會立即出動所需之救護隊，前往救護後送。
-
-四、各地防疫物資配發，請各地方政府持續盤點醫療院所及第一線防疫同仁所需，指揮中心會立即配合完成撥付，提供第一線防疫同仁充分裝備，順利執行任務。
-
-五、有關由各地方責任醫院設置社區篩檢站事宜，將以考量責任醫院人力及收治量能，且勿排擠重症病患收治量能原則下，依急迫及必要性妥予規劃；另為減輕醫療及安置資源，針對社區快篩為陽性之民眾，可先行返家進行居家隔離，並建立妥予完成安置及後送就醫標準作業流程(SOP)，以完備後續救護之安排。</pre>
+                        <div class="innerDialog" id='announcement'>
+                            <pre style="height:74vh;white-space:pre-wrap;overflow-y:scroll;font-family:Roboto;font-size:1.5vh"></pre>
                         </div>
                     </div>
                 </div>
