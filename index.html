@@ -60,12 +60,16 @@
             var marquee;
             var reset;
             function init_marquee() {
-                marquee = $("#marquee"); 
+                var items = get_localstorage();
+                var marquee = $("#marquee"); 
                 marquee.css({"overflow": "hidden", "width": "100%"});
 
                 marquee.wrapInner("<span>");
                 marquee.find("span").css({"display": "inline-block", "text-align":"center", "min-width":$(".dialog")[0].scrollWidth}); 
                 marquee.append(marquee.find("span").clone());
+                $('#marquee span').each(function () {
+                    $(this).text(items['news']);
+                });
 
                 marquee.wrapInner("<div>");
                 marquee.find("div").css("white-space", "nowrap");
@@ -210,9 +214,6 @@
                 init_show_time();
                 init_marquee();
                 init_youtube_iframe();
-                $('#marquee span').each(function () {
-                    $(this).text(items['news']);
-                });
                 announcement_marquee();
             };
 
