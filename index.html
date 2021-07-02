@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+        <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.24.0/ui/trumbowyg.min.css" rel="stylesheet">
         <link href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
@@ -9,6 +10,10 @@
         <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
         <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.min.js" integrity="sha384-Atwg2Pkwv9vp0ygtn1JAojH0nYbwNJLPhwyoVbhoPwBhjQPR5VtM2+xf0Uwh9KtT" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.24.0/trumbowyg.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.24.0/plugins/fontsize/trumbowyg.fontsize.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.24.0/plugins/pasteimage/trumbowyg.pasteimage.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.24.0/plugins/indent/trumbowyg.indent.min.js"></script>
         <style>
             div {
                 font-family: "Roboto";
@@ -16,9 +21,12 @@
             .innerDialog {
                 padding: 15px;
             }
+            #announcement img {
+                width: 100%;
+            }
         </style>
         <script>
-            function showTime(){
+            function init_show_time() {
                 var date = new Date();
                 var h = date.getHours();
                 var m = date.getMinutes();
@@ -46,37 +54,40 @@
                 weekday_string = '<p class=\'text-muted\'>' + weekday_string + '</p>';
                 $(".clock").html(time_string);
                 $(".weekday").html(weekday_string);
-                setTimeout( showTime, 1000 );
+                setTimeout( init_show_time, 1000 );
             }
 
-            $(function() {
-
-                var marquee = $("#marquee"); 
+            var marquee;
+            var reset;
+            function init_marquee() {
+                marquee = $("#marquee"); 
                 marquee.css({"overflow": "hidden", "width": "100%"});
 
                 marquee.wrapInner("<span>");
                 marquee.find("span").css({"display": "inline-block", "text-align":"center", "min-width":$(".dialog")[0].scrollWidth}); 
-                marquee.append(marquee.find("span").clone()); // now there are two spans with "My Text"
+                marquee.append(marquee.find("span").clone());
 
                 marquee.wrapInner("<div>");
                 marquee.find("div").css("white-space", "nowrap");
                 marquee.find("div").css("display", "inline-block");
 
-                var reset = function() {
+                reset = function() {
                     var scrollWidth = $("span")[0].scrollWidth;
                     $(this).css("margin-left", "0px");
                     $(this).animate({ "margin-left": scrollWidth * -1 }, 10000 * scrollWidth / 1000, 'linear', reset);
                 };
 
                 reset.call(marquee.find("div"));
-                showTime();
-            });
+            };
 
             var player;
-            var tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            var firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+            function init_youtube_iframe() {
+                var tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            };
 
             function onYouTubeIframeAPIReady() {
                 player = new YT.Player('player', {
@@ -105,11 +116,40 @@
                 };
             };
 
+            var quill;
+            function init_rich_editer(delta) {
+                var items = get_localstorage();
+                $('#announcementValue').trumbowyg({
+                    btns: [['fontsize'], 
+                           ['strong', 'em', 'del'], 
+                           ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
+                           ['unorderedList', 'orderedList'],
+                           ['indent', 'outdent'],
+                           ['insertImage'],
+                           ['removeformat']]
+                });
+                $('#announcementValue').html(items['announcement']);
+            };
+
+            function announcement_marquee() {
+                var element = $('#announcement');
+                var height = element.innerHeight();
+                var parent_height = element.parent().innerHeight();
+                if (height > parent_height) {
+                    element.css({'top':'0px'});
+
+                    $('#announcement').delay(5000).animate({'top':height * -1}, {
+                        duration: height * 20,
+                        complete: announcement_marquee
+                    });
+                };
+            };
+
             function show_editer() {
                 items = get_localstorage();
                 $('#newsValue').val(items['news']);
                 $('#youtubeValue').val(items['youtube']);
-                $('#announcementValue').val(items['announcement']);
+                init_rich_editer();
                 $('#exampleModal').modal('toggle');
             };
 
@@ -117,7 +157,7 @@
                 localStorage.tvBoardDataExist = 1;
                 localStorage.tvBoardDataNews = 'news';
                 localStorage.tvBoardDataYouTube = 'https://youtu.be/';
-                localStorage.tvBoardDataAnnouncement = 'announcement'
+                localStorage.tvBoardDataAnnouncement = '';
             };
 
             function update_localstorage(items) {
@@ -163,30 +203,46 @@
                 return id;
             }
 
-            function update_board() {
-                if (!localStorage.tvBoardDataExist) {
-                    init_localstorage();
-                }
+            function show_board() {
                 items = get_localstorage();
+                $('.d-none').removeClass('d-none');
+                $('#announcement').html(items['announcement']);
+                init_show_time();
+                init_marquee();
+                init_youtube_iframe();
                 $('#marquee span').each(function () {
                     $(this).text(items['news']);
                 });
-                $('#announcement pre').text(items['announcement']);
+                announcement_marquee();
             };
 
             function save_change() {
                 items = {};
                 items['news'] = $('#newsValue').val();
                 items['youtube'] = $('#youtubeValue').val();
-                items['announcement'] = $('#announcementValue').val();
+                items['announcement'] = $('#announcementValue').html();
                 update_localstorage(items);
                 $('#exampleModal').modal('hide');
-                location.reload();
+                location.href=location.pathname;
             };
+
+            function check_mode() {
+                var query_string = location.search;
+                if (query_string.indexOf('editer=1') < 0) {
+                    show_board();
+                } else {
+                    show_editer();
+                };
+            };
+
+            if (!localStorage.tvBoardDataExist) {
+                init_localstorage();
+            }
+
         </script>
     </head>
-    <body class="bg-dark text-white" onload="update_board()">
-        <div style="position:absolute; top:0; right:0; font-size:0.8vw;"><a href="javascript:void(0)" onclick="show_editer()"><i class="fas fa-cog"></i>Update</a></div>
+    <body class="bg-dark text-white" onload="check_mode()">
+        <div style="position:absolute; top:0; right:0; font-size:0.8vw;"><a href="?editer=1"><i class="fas fa-cog"></i>Update</a></div>
         <div class="modal fade bd-example-modal-lg text-dark" id="exampleModal" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
@@ -199,16 +255,16 @@
                         YouTube link</br>
                         <input type="text" id="youtubeValue" style="width:100%"></input></br>
                         Announcement</br>
-                        <textarea id="announcementValue" style="width:100%;height:70%"></textarea>
+                        <div id="announcementValue" style="width:100%;height:70%;line-height: 0.5;"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="javascript:$('#exampleModal').modal('hide')">Close</button>
+                        <button type="button" class="btn btn-secondary" onclick="javascript:location.href=location.pathname">Close</button>
                         <button type="button" class="btn btn-primary" onclick="save_change()">Save changes</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="container" id="board" style="max-width:100%;">
+        <div class="container d-none" id="board" style="max-width:100%;">
             <div class="row" style="height:1vh"></div>
             <div class="row" style="height:13vh">
                 <div style="width:72%">
@@ -233,10 +289,9 @@
                         <div class="innerDialog" id="player" style="height:100%"></div>
                     </div>
                 </div>
-                <div style="width:23%; margin-left: auto; margin-right: 0;">
-                    <div class="dialog">
-                        <div class="innerDialog" id='announcement'>
-                            <pre style="height:74vh;white-space:pre-wrap;overflow-y:scroll;font-family:Roboto;font-size:1.5vh"></pre>
+                <div style="height:100%;width:23%;margin-left:auto;margin-right:0;">
+                    <div class="dialog" style="height:100%; overflow: hidden;">
+                        <div class="innerDialog" id='announcement' style="position:relative;line-height:1;overflow-wrap:break-word;">
                         </div>
                     </div>
                 </div>
